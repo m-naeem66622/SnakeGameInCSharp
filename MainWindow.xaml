@@ -149,6 +149,11 @@
                                            FontSize="30"
                                            FontWeight="Bold"
                                            Margin="0,6,0,0" />
+                                <TextBlock x:Name="BestScoreText"
+                                           Text="Best: 0"
+                                           Foreground="#7F8AB5"
+                                           FontSize="12"
+                                           Margin="0,8,0,0" />
                             </StackPanel>
                         </Border>
 
@@ -235,6 +240,13 @@
                                     Background="#1B1624"
                                     BorderBrush="{StaticResource WarningBrush}"
                                     Click="ResetButton_Click" />
+                            <Button x:Name="ScoreHistoryButton"
+                                    Content="History"
+                                    Width="110"
+                                    Margin="12,0,0,0"
+                                    Background="#131C2C"
+                                    BorderBrush="{StaticResource AccentBrushSecondary}"
+                                    Click="ScoreHistoryButton_Click" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

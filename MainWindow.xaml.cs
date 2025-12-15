@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +18,8 @@ namespace SnakeGame
         private readonly Color _snakeHighlightColor = Color.FromRgb(0xA3, 0xFF, 0xF7);
         private readonly Brush _foodBrush = new SolidColorBrush(Color.FromRgb(0x3E, 0xE3, 0xA7));
         private readonly Brush _bonusBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xD1, 0x66));
+        private readonly List<(int Score, DateTime CompletedAt)> _scoreHistory = new();
+        private int _bestScore;
 
         public MainWindow()
         {
@@ -37,6 +40,16 @@ namespace SnakeGame
         }
 
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e) => TogglePlayPause();
+
+        private void ScoreHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            var historyWindow = new ScoreHistoryWindow(_scoreHistory, _bestScore)
+            {
+                Owner = this
+            };
+
+            historyWindow.ShowDialog();
+        }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
@@ -84,6 +97,7 @@ namespace SnakeGame
         {
             Dispatcher.Invoke(() =>
             {
+                RecordScore(_engine.Score);
                 MessageBox.Show($"Game Over! Score: {_engine.Score}", "Neon Snake");
                 _engine.Reset();
             });
@@ -188,7 +202,7 @@ namespace SnakeGame
             ScoreText.Text = _engine.Score.ToString();
             LevelText.Text = _engine.Level.ToString();
             SpeedText.Text = _engine.SpeedLabel;
-
+            UpdateBestScoreDisplay();
             UpdatePlayPauseButton();
         }
 
@@ -222,6 +236,32 @@ namespace SnakeGame
             PlayPauseButton.Background = showPlay ? accent : new SolidColorBrush(Color.FromRgb(0x1A, 0x23, 0x38));
             PlayPauseButton.BorderBrush = showPlay ? accent : secondary;
             PlayPauseButton.Foreground = showPlay ? new SolidColorBrush(Color.FromRgb(0x04, 0x12, 0x1F)) : Brushes.White;
+        }
+
+        private void UpdateBestScoreDisplay()
+        {
+            if (BestScoreText is null)
+            {
+                return;
+            }
+
+            BestScoreText.Text = $"Best: {_bestScore}";
+        }
+
+        private void RecordScore(int score)
+        {
+            if (score < 0)
+            {
+                score = 0;
+            }
+
+            _scoreHistory.Add((score, DateTime.Now));
+            if (score > _bestScore)
+            {
+                _bestScore = score;
+            }
+
+            UpdateBestScoreDisplay();
         }
 
         private Brush CreateSegmentBrush(double progress, bool isHead)
