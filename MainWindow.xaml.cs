@@ -30,6 +30,7 @@ namespace SnakeGame
             _engine.Updated += Engine_Updated;
             _engine.GameOver += Engine_GameOver;
             SizeChanged += MainWindow_SizeChanged;
+            Loaded += (_, _) => ApplyResponsiveLayout();
 
             RenderAll();
         }
@@ -37,6 +38,7 @@ namespace SnakeGame
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             RenderAll();
+            ApplyResponsiveLayout();
         }
 
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e) => TogglePlayPause();
@@ -55,6 +57,41 @@ namespace SnakeGame
         {
             _engine.Reset();
             UpdatePlayPauseButton();
+        }
+
+        private void ApplyResponsiveLayout()
+        {
+            if (ResponsiveLayoutGrid is null || SidebarHost is null || PrimaryColumn is null || SidebarColumn is null || SidebarRow is null)
+            {
+                return;
+            }
+
+            var layoutWidth = ResponsiveLayoutGrid.ActualWidth;
+            if (layoutWidth <= 0)
+            {
+                layoutWidth = ActualWidth - 64;
+            }
+
+            var isNarrow = layoutWidth < 1100;
+
+            if (isNarrow)
+            {
+                Grid.SetColumn(SidebarHost, 0);
+                Grid.SetRow(SidebarHost, 1);
+                SidebarHost.Margin = new Thickness(0, 24, 0, 0);
+                SidebarColumn.Width = new GridLength(0);
+                PrimaryColumn.Width = new GridLength(1, GridUnitType.Star);
+                SidebarRow.Height = GridLength.Auto;
+            }
+            else
+            {
+                Grid.SetColumn(SidebarHost, 1);
+                Grid.SetRow(SidebarHost, 0);
+                SidebarHost.Margin = new Thickness(24, 0, 0, 0);
+                SidebarColumn.Width = new GridLength(1.6, GridUnitType.Star);
+                PrimaryColumn.Width = new GridLength(3, GridUnitType.Star);
+                SidebarRow.Height = new GridLength(0);
+            }
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)

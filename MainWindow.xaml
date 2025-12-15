@@ -32,9 +32,10 @@
             <Setter Property="Effect" Value="{StaticResource CardShadow}" />
         </Style>
         <Style x:Key="StatCardStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Background" Value="#11182B" />
-            <Setter Property="Padding" Value="16" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="MinWidth" Value="150" />
             <Setter Property="Effect" Value="{StaticResource CardShadow}" />
         </Style>
         <Style TargetType="TextBlock" x:Key="SectionLabel">
@@ -87,14 +88,21 @@
             <Ellipse Width="420" Height="420" Fill="#144253" HorizontalAlignment="Right" Margin="0,0,-120,-60" Opacity="0.28" Effect="{StaticResource SoftGlow}" />
         </Grid>
 
-        <Grid Margin="32">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3.2*" />
-                <ColumnDefinition Width="1.8*" />
-            </Grid.ColumnDefinitions>
+        <Grid x:Name="ResponsiveLayoutGrid" Margin="24">
+                <Grid.RowDefinitions>
+                    <RowDefinition x:Name="PrimaryRow" Height="*" />
+                    <RowDefinition x:Name="SidebarRow" Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="PrimaryColumn" Width="3*" />
+                    <ColumnDefinition x:Name="SidebarColumn" Width="1.6*" />
+                </Grid.ColumnDefinitions>
 
             <!-- Gameplay Surface -->
-            <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+            <Border Grid.Row="0"
+                    Grid.Column="0"
+                    MinHeight="420"
+                    Style="{StaticResource CardBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -132,23 +140,17 @@
                     </Grid>
 
                     <!-- Stats -->
-                    <Grid Grid.Row="1" Margin="0,28,0,32">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <Border Style="{StaticResource StatCardStyle}" Margin="0,0,18,0">
+                    <WrapPanel Grid.Row="1" Margin="0,20,0,24" ItemHeight="Auto" ItemWidth="220">
+                        <Border Style="{StaticResource StatCardStyle}" Margin="0,0,16,16">
                             <StackPanel>
                                 <TextBlock Text="Score"
                                            Style="{StaticResource SectionLabel}" />
                                 <TextBlock x:Name="ScoreText"
                                            Text="0"
                                            Foreground="White"
-                                           FontSize="30"
+                                           FontSize="26"
                                            FontWeight="Bold"
-                                           Margin="0,6,0,0" />
+                                           Margin="0,4,0,0" />
                                 <TextBlock x:Name="BestScoreText"
                                            Text="Best: 0"
                                            Foreground="#7F8AB5"
@@ -157,37 +159,37 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Style="{StaticResource StatCardStyle}" Grid.Column="1" Margin="0,0,18,0">
+                        <Border Style="{StaticResource StatCardStyle}" Margin="0,0,16,16">
                             <StackPanel>
                                 <TextBlock Text="Level"
                                            Style="{StaticResource SectionLabel}" />
                                 <TextBlock x:Name="LevelText"
                                            Text="1"
                                            Foreground="White"
-                                           FontSize="30"
+                                           FontSize="26"
                                            FontWeight="Bold"
-                                           Margin="0,6,0,0" />
+                                           Margin="0,4,0,0" />
                             </StackPanel>
                         </Border>
 
-                        <Border Style="{StaticResource StatCardStyle}" Grid.Column="2">
+                        <Border Style="{StaticResource StatCardStyle}" Margin="0,0,16,16">
                             <StackPanel>
                                 <TextBlock Text="Speed"
                                            Style="{StaticResource SectionLabel}" />
                                 <TextBlock x:Name="SpeedText"
                                            Text="Normal"
                                            Foreground="White"
-                                           FontSize="30"
+                                           FontSize="26"
                                            FontWeight="Bold"
-                                           Margin="0,6,0,0" />
+                                           Margin="0,4,0,0" />
                             </StackPanel>
                         </Border>
-                    </Grid>
+                    </WrapPanel>
 
                     <!-- Game Canvas -->
-                    <Border Grid.Row="2" Background="#050C18" CornerRadius="20" Padding="16">
+                    <Border Grid.Row="2" Background="#050C18" CornerRadius="20" Padding="16" MinHeight="360">
                         <Grid>
-                            <Canvas x:Name="GameCanvas" Background="#040A12" ClipToBounds="True" />
+                            <Canvas x:Name="GameCanvas" Background="#040A12" ClipToBounds="True" MinHeight="320" />
                             <Rectangle Stroke="#15233B"
                                        StrokeDashArray="0,18"
                                        RadiusX="18"
@@ -214,7 +216,13 @@
             </Border>
 
             <!-- Command & Info Panel -->
-            <StackPanel Grid.Column="1" Margin="32,0,0,0">
+            <ScrollViewer x:Name="SidebarHost"
+                          Grid.Row="0"
+                          Grid.Column="1"
+                          Margin="24,0,0,0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="SidebarPanel">
                 <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel>
                         <TextBlock Text="Session Controls"
@@ -225,10 +233,11 @@
                                    Style="{StaticResource SectionLabel}"
                                    Margin="0,4,0,20" />
 
-                        <StackPanel Orientation="Horizontal">
+                        <WrapPanel ItemHeight="Auto">
                             <Button x:Name="PlayPauseButton"
                                     Content="Play"
                                     Width="140"
+                                    Margin="0,0,12,12"
                                     Background="{StaticResource AccentBrush}"
                                     Foreground="#04121F"
                                     BorderBrush="{StaticResource AccentBrush}"
@@ -236,18 +245,18 @@
                             <Button x:Name="ResetButton"
                                     Content="Reset"
                                     Width="110"
-                                    Margin="12,0,0,0"
+                                    Margin="0,0,12,12"
                                     Background="#1B1624"
                                     BorderBrush="{StaticResource WarningBrush}"
                                     Click="ResetButton_Click" />
                             <Button x:Name="ScoreHistoryButton"
                                     Content="History"
                                     Width="110"
-                                    Margin="12,0,0,0"
+                                    Margin="0,0,12,12"
                                     Background="#131C2C"
                                     BorderBrush="{StaticResource AccentBrushSecondary}"
                                     Click="ScoreHistoryButton_Click" />
-                        </StackPanel>
+                        </WrapPanel>
                     </StackPanel>
                 </Border>
 
@@ -300,7 +309,8 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-            </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>
