@@ -150,9 +150,9 @@ namespace SnakeGame
             }
 
             // HUD updates
-            ScoreText.Text = $"Score: {_engine.Score}";
-            LevelText.Text = $"Level: {_engine.Level}";
-            SpeedText.Text = $"Speed: {_engine.SpeedLabel}";
+            ScoreText.Text = _engine.Score.ToString();
+            LevelText.Text = _engine.Level.ToString();
+            SpeedText.Text = _engine.SpeedLabel;
         }
     }
 }
