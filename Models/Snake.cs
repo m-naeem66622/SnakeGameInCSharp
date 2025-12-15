@@ -9,6 +9,7 @@ namespace SnakeGame
     {
         public List<GridPosition> Segments { get; private set; } = new();
         private Direction _direction;
+        private Direction _desiredDirection;
         private int _pendingGrowth;
 
         public GridPosition Head => Segments.First();
@@ -17,6 +18,7 @@ namespace SnakeGame
         {
             Segments = segments;
             _direction = dir;
+            _desiredDirection = dir;
         }
 
         public static Snake CreateCentered(int x, int y)
@@ -27,17 +29,26 @@ namespace SnakeGame
 
         public void ChangeDirection(Direction d)
         {
-            // prevent reversing
+            // prevent reversing relative to current motion
             if ((_direction == Direction.Left && d == Direction.Right) ||
                 (_direction == Direction.Right && d == Direction.Left) ||
                 (_direction == Direction.Up && d == Direction.Down) ||
                 (_direction == Direction.Down && d == Direction.Up))
+            {
                 return;
-            _direction = d;
+            }
+
+            if (_desiredDirection == d)
+            {
+                return;
+            }
+
+            _desiredDirection = d;
         }
 
         public void Move()
         {
+            _direction = _desiredDirection;
             var head = Head;
             GridPosition next = _direction switch
             {

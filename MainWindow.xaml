@@ -51,6 +51,7 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Focusable" Value="False" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -220,20 +221,13 @@
                                    Margin="0,4,0,20" />
 
                         <StackPanel Orientation="Horizontal">
-                            <Button x:Name="StartButton"
-                                    Content="Start"
-                                    Width="110"
+                            <Button x:Name="PlayPauseButton"
+                                    Content="Play"
+                                    Width="140"
                                     Background="{StaticResource AccentBrush}"
                                     Foreground="#04121F"
                                     BorderBrush="{StaticResource AccentBrush}"
-                                    Click="StartButton_Click" />
-                            <Button x:Name="PauseButton"
-                                    Content="Pause"
-                                    Width="110"
-                                    Margin="12,0,0,0"
-                                    Background="#1A2338"
-                                    BorderBrush="{StaticResource AccentBrushSecondary}"
-                                    Click="PauseButton_Click" />
+                                    Click="PlayPauseButton_Click" />
                             <Button x:Name="ResetButton"
                                     Content="Reset"
                                     Width="110"

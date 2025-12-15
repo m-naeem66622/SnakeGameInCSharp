@@ -1,17 +1,20 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Shapes;
-using System.Linq;
 
 namespace SnakeGame
 {
     public partial class MainWindow : Window
     {
         private readonly GameEngine _engine;
-        private readonly Brush _snakeBrush = new LinearGradientBrush(Color.FromRgb(0x6A, 0xF0, 0xD6), Color.FromRgb(0x00, 0x8C, 0x6A), 45);
+        private readonly Color _snakeHeadColor = Color.FromRgb(0x7E, 0xFF, 0xC6);
+        private readonly Color _snakeTailColor = Color.FromRgb(0x05, 0x3A, 0x32);
+        private readonly Color _snakeHighlightColor = Color.FromRgb(0xA3, 0xFF, 0xF7);
         private readonly Brush _foodBrush = new SolidColorBrush(Color.FromRgb(0x3E, 0xE3, 0xA7));
         private readonly Brush _bonusBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xD1, 0x66));
 
@@ -33,12 +36,18 @@ namespace SnakeGame
             RenderAll();
         }
 
-        private void StartButton_Click(object sender, RoutedEventArgs e) => _engine.Start();
-        private void PauseButton_Click(object sender, RoutedEventArgs e) => _engine.TogglePause();
-        private void ResetButton_Click(object sender, RoutedEventArgs e) => _engine.Reset();
+        private void PlayPauseButton_Click(object sender, RoutedEventArgs e) => TogglePlayPause();
+
+        private void ResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            _engine.Reset();
+            UpdatePlayPauseButton();
+        }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
+            var handled = true;
+
             switch (e.Key)
             {
                 case Key.Up:
@@ -58,8 +67,16 @@ namespace SnakeGame
                     _engine.SetDirection(Direction.Right);
                     break;
                 case Key.Space:
-                    _engine.TogglePause();
+                    TogglePlayPause();
                     break;
+                default:
+                    handled = false;
+                    break;
+            }
+
+            if (handled)
+            {
+                e.Handled = true;
             }
         }
 
@@ -68,7 +85,7 @@ namespace SnakeGame
             Dispatcher.Invoke(() =>
             {
                 MessageBox.Show($"Game Over! Score: {_engine.Score}", "Neon Snake");
-                RenderAll();
+                _engine.Reset();
             });
         }
 
@@ -96,56 +113,74 @@ namespace SnakeGame
             Canvas.SetTop(glow, 0);
             GameCanvas.Children.Add(glow);
 
-            // draw snake
-            bool first = true;
-            foreach (var segment in _engine.Snake.Segments)
+            // draw snake with neon trail
+            var segments = _engine.Snake.Segments.ToList();
+            var totalSegments = segments.Count;
+            for (var i = 0; i < totalSegments; i++)
             {
+                var segment = segments[i];
+                var isHead = i == 0;
+                var progress = totalSegments <= 1 ? 0d : (double)i / (totalSegments - 1);
+
                 var rect = new Rectangle
                 {
-                    Width = cellW - 2,
-                    Height = cellH - 2,
-                    RadiusX = 6,
-                    RadiusY = 6,
-                    Fill = first ? _snakeBrush : _snakeBrush,
-                    Opacity = first ? 1.0 : 0.92
+                    Width = Math.Max(4, cellW - 4),
+                    Height = Math.Max(4, cellH - 4),
+                    RadiusX = isHead ? 10 : 8,
+                    RadiusY = isHead ? 10 : 8,
+                    Fill = CreateSegmentBrush(progress, isHead),
+                    Opacity = isHead ? 1.0 : 0.9,
+                    StrokeThickness = isHead ? 1.2 : 0
                 };
-                Canvas.SetLeft(rect, segment.X * cellW + 1);
-                Canvas.SetTop(rect, segment.Y * cellH + 1);
+
+                if (isHead)
+                {
+                    rect.Stroke = new SolidColorBrush(Color.FromArgb(180, 255, 255, 255));
+                }
+
+                rect.Effect = CreateSegmentGlow(progress, isHead);
+
+                Canvas.SetLeft(rect, segment.X * cellW + 2);
+                Canvas.SetTop(rect, segment.Y * cellH + 2);
                 GameCanvas.Children.Add(rect);
-                first = false;
             }
+
+            var baseFoodWidth = Math.Max(6, cellW - 6);
+            var baseFoodHeight = Math.Max(6, cellH - 6);
 
             // draw food
             if (_engine.Food is not null)
             {
                 var f = new Ellipse
                 {
-                    Width = cellW - 6,
-                    Height = cellH - 6,
+                    Width = baseFoodWidth,
+                    Height = baseFoodHeight,
                     Fill = _foodBrush,
                     Stroke = Brushes.White,
                     StrokeThickness = 0.6,
                     Opacity = 0.95
                 };
-                Canvas.SetLeft(f, _engine.Food.Position.X * cellW + 3);
-                Canvas.SetTop(f, _engine.Food.Position.Y * cellH + 3);
+                Canvas.SetLeft(f, _engine.Food.Position.X * cellW + (cellW - baseFoodWidth) / 2);
+                Canvas.SetTop(f, _engine.Food.Position.Y * cellH + (cellH - baseFoodHeight) / 2);
                 GameCanvas.Children.Add(f);
             }
 
             // draw bonus
             if (_engine.Bonus is not null)
             {
+                var bonusWidth = Math.Min(cellW - 2, baseFoodWidth * 2);
+                var bonusHeight = Math.Min(cellH - 2, baseFoodHeight * 2);
                 var b = new Ellipse
                 {
-                    Width = cellW - 4,
-                    Height = cellH - 4,
+                    Width = bonusWidth,
+                    Height = bonusHeight,
                     Fill = _bonusBrush,
                     Stroke = Brushes.White,
                     StrokeThickness = 0.6,
                     Opacity = 0.95
                 };
-                Canvas.SetLeft(b, _engine.Bonus.Position.X * cellW + 2);
-                Canvas.SetTop(b, _engine.Bonus.Position.Y * cellH + 2);
+                Canvas.SetLeft(b, _engine.Bonus.Position.X * cellW + (cellW - bonusWidth) / 2);
+                Canvas.SetTop(b, _engine.Bonus.Position.Y * cellH + (cellH - bonusHeight) / 2);
                 GameCanvas.Children.Add(b);
             }
 
@@ -153,6 +188,73 @@ namespace SnakeGame
             ScoreText.Text = _engine.Score.ToString();
             LevelText.Text = _engine.Level.ToString();
             SpeedText.Text = _engine.SpeedLabel;
+
+            UpdatePlayPauseButton();
+        }
+
+        private void TogglePlayPause()
+        {
+            if (!_engine.IsRunning)
+            {
+                _engine.Start();
+            }
+            else
+            {
+                _engine.TogglePause();
+            }
+
+            UpdatePlayPauseButton();
+        }
+
+        private void UpdatePlayPauseButton()
+        {
+            if (PlayPauseButton is null)
+            {
+                return;
+            }
+
+            var showPlay = !_engine.IsRunning || !_engine.IsTicking;
+            PlayPauseButton.Content = showPlay ? "Play" : "Pause";
+
+            var accent = TryFindResource("AccentBrush") as Brush ?? new SolidColorBrush(Color.FromRgb(0x66, 0xF7, 0xD5));
+            var secondary = TryFindResource("AccentBrushSecondary") as Brush ?? new SolidColorBrush(Color.FromRgb(0x8A, 0xA5, 0xFF));
+
+            PlayPauseButton.Background = showPlay ? accent : new SolidColorBrush(Color.FromRgb(0x1A, 0x23, 0x38));
+            PlayPauseButton.BorderBrush = showPlay ? accent : secondary;
+            PlayPauseButton.Foreground = showPlay ? new SolidColorBrush(Color.FromRgb(0x04, 0x12, 0x1F)) : Brushes.White;
+        }
+
+        private Brush CreateSegmentBrush(double progress, bool isHead)
+        {
+            var startColor = InterpolateColor(_snakeHeadColor, _snakeTailColor, progress * 0.6);
+            var highlight = InterpolateColor(_snakeHighlightColor, _snakeTailColor, progress);
+            var angle = isHead ? 20 : 70;
+
+            return new LinearGradientBrush(highlight, startColor, angle)
+            {
+                MappingMode = BrushMappingMode.RelativeToBoundingBox
+            };
+        }
+
+        private DropShadowEffect CreateSegmentGlow(double progress, bool isHead)
+        {
+            var glowColor = InterpolateColor(_snakeHighlightColor, _snakeTailColor, progress);
+            return new DropShadowEffect
+            {
+                Color = glowColor,
+                BlurRadius = isHead ? 26 : 18,
+                ShadowDepth = 0,
+                Opacity = isHead ? 0.95 : 0.65
+            };
+        }
+
+        private static Color InterpolateColor(Color start, Color end, double progress)
+        {
+            progress = Math.Clamp(progress, 0d, 1d);
+            byte r = (byte)(start.R + (end.R - start.R) * progress);
+            byte g = (byte)(start.G + (end.G - start.G) * progress);
+            byte b = (byte)(start.B + (end.B - start.B) * progress);
+            return Color.FromRgb(r, g, b);
         }
     }
 }

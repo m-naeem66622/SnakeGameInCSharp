@@ -19,6 +19,8 @@ namespace SnakeGame
 
         public int Score { get; private set; }
         public int Level { get; private set; } = 1;
+        public bool IsRunning => _isRunning;
+        public bool IsTicking => _tickTimer.Enabled;
         public string SpeedLabel => _tickTimer.Interval switch
         {
             <= 80 => "Very Fast",
