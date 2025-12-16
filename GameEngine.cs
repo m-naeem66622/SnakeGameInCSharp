@@ -13,6 +13,7 @@ namespace SnakeGame
         private readonly System.Timers.Timer _tickTimer;
         private readonly System.Timers.Timer _bonusTimer;
         private bool _isRunning;
+        private double _speedModifierMs;
 
         public int GridWidth { get; }
         public int GridHeight { get; }
@@ -35,6 +36,7 @@ namespace SnakeGame
 
         public event EventHandler? Updated;
         public event EventHandler? GameOver;
+        public event EventHandler<FoodConsumedEventArgs>? FoodConsumed;
 
         public GameEngine(int gridWidth, int gridHeight)
         {
@@ -81,6 +83,7 @@ namespace SnakeGame
 
             Score = 0;
             Level = 1;
+            _speedModifierMs = 0;
             Snake = Snake.CreateCentered(GridWidth / 2, GridHeight / 2);
             Food = SpawnFood();
             Bonus = null;
@@ -111,9 +114,12 @@ namespace SnakeGame
             // Food
             if (Food is not null && head.Equals(Food.Position))
             {
+                var consumedFood = Food;
                 Snake.Grow();
-                Score += Food.Points;
+                Score += consumedFood.Points;
                 Food = SpawnFood();
+                ApplyFoodEffect(consumedFood.Type);
+                FoodConsumed?.Invoke(this, new FoodConsumedEventArgs(consumedFood.Type));
                 OnScoreChanged();
             }
 
@@ -122,6 +128,7 @@ namespace SnakeGame
             {
                 Snake.Grow(3);
                 Score += Bonus.Points;
+                 FoodConsumed?.Invoke(this, new FoodConsumedEventArgs(FoodType.Bonus));
                 Bonus = null;
                 OnScoreChanged();
             }
@@ -137,15 +144,19 @@ namespace SnakeGame
             {
                 Level = newLevel;
                 // speed up: exponential-ish
-                var newInterval = Math.Max(40, 200 - (Level - 1) * 22);
-                _tickTimer.Interval = newInterval;
+                UpdateTickInterval();
+            }
+            else
+            {
+                UpdateTickInterval();
             }
         }
 
         private Food SpawnFood()
         {
             var pos = GetFreePosition();
-            return new Food(pos, BaseFoodPoints);
+            var type = GetRandomFoodType();
+            return new Food(pos, BaseFoodPoints, type);
         }
 
         private void TrySpawnBonus()
@@ -177,8 +188,44 @@ namespace SnakeGame
             do
             {
                 pos = new GridPosition(_rnd.Next(0, GridWidth), _rnd.Next(0, GridHeight));
-            } while (Snake.Segments.Contains(pos) || (Food?.Position.Equals(pos) ?? false));
+            } while (Snake.Segments.Contains(pos) || (Food?.Position.Equals(pos) ?? false) || (Bonus?.Position.Equals(pos) ?? false));
             return pos;
+        }
+
+        private FoodType GetRandomFoodType()
+        {
+            var roll = _rnd.NextDouble();
+            return roll switch
+            {
+                < 0.15 => FoodType.Fast,
+                < 0.3 => FoodType.Slow,
+                _ => FoodType.Normal
+            };
+        }
+
+        private void ApplyFoodEffect(FoodType type)
+        {
+            const double modifierStep = 20;
+            switch (type)
+            {
+                case FoodType.Fast:
+                    _speedModifierMs = Math.Max(_speedModifierMs - modifierStep, -60);
+                    break;
+                case FoodType.Slow:
+                    _speedModifierMs = Math.Min(_speedModifierMs + modifierStep, 60);
+                    break;
+                default:
+                    return;
+            }
+
+            UpdateTickInterval();
+        }
+
+        private void UpdateTickInterval()
+        {
+            var baseInterval = Math.Max(40, 200 - (Level - 1) * 22);
+            var adjusted = baseInterval + _speedModifierMs;
+            _tickTimer.Interval = Math.Clamp(adjusted, 40, 400);
         }
     }
 }

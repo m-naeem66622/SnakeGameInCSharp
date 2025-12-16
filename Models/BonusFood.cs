@@ -6,7 +6,7 @@ namespace SnakeGame
     {
         public TimeSpan Lifespan { get; }
         public BonusFood(GridPosition position, int points, TimeSpan lifespan)
-            : base(position, points)
+            : base(position, points, FoodType.Bonus)
         {
             Lifespan = lifespan;
         }

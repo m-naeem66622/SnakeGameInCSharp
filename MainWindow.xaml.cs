@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Media;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -17,6 +18,8 @@ namespace SnakeGame
         private readonly Color _snakeTailColor = Color.FromRgb(0x05, 0x3A, 0x32);
         private readonly Color _snakeHighlightColor = Color.FromRgb(0xA3, 0xFF, 0xF7);
         private readonly Brush _foodBrush = new SolidColorBrush(Color.FromRgb(0x3E, 0xE3, 0xA7));
+        private readonly Brush _fastFoodBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x5C));
+        private readonly Brush _slowFoodBrush = new SolidColorBrush(Color.FromRgb(0x6B, 0xC9, 0xFF));
         private readonly Brush _bonusBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xD1, 0x66));
         private readonly Color _boardBaseColor = Color.FromRgb(0x04, 0x0A, 0x12);
         private readonly Color _gridLineColor = Color.FromArgb(110, 0x15, 0x23, 0x3B);
@@ -33,6 +36,7 @@ namespace SnakeGame
             _engine = new GameEngine(40, 30);
             _engine.Updated += Engine_Updated;
             _engine.GameOver += Engine_GameOver;
+            _engine.FoodConsumed += Engine_FoodConsumed;
             SizeChanged += MainWindow_SizeChanged;
             Loaded += (_, _) => ApplyResponsiveLayout();
 
@@ -139,10 +143,16 @@ namespace SnakeGame
         {
             Dispatcher.Invoke(() =>
             {
+                SystemSounds.Hand.Play();
                 RecordScore(_engine.Score);
                 ShowGameOverOverlay();
                 UpdatePlayPauseButton();
             });
+        }
+
+        private void Engine_FoodConsumed(object? sender, FoodConsumedEventArgs e)
+        {
+            Dispatcher.Invoke(() => PlayFoodSound(e.Type));
         }
 
         private void Engine_Updated(object? sender, EventArgs e)
@@ -213,7 +223,7 @@ namespace SnakeGame
                 {
                     Width = baseFoodWidth,
                     Height = baseFoodHeight,
-                    Fill = _foodBrush,
+                    Fill = GetFoodBrush(_engine.Food.Type),
                     Stroke = Brushes.White,
                     StrokeThickness = 0.6,
                     Opacity = 0.95
@@ -341,6 +351,32 @@ namespace SnakeGame
             }
 
             BestScoreText.Text = $"Best: {_bestScore}";
+        }
+
+        private Brush GetFoodBrush(FoodType type) => type switch
+        {
+            FoodType.Fast => _fastFoodBrush,
+            FoodType.Slow => _slowFoodBrush,
+            _ => _foodBrush
+        };
+
+        private void PlayFoodSound(FoodType type)
+        {
+            switch (type)
+            {
+                case FoodType.Bonus:
+                    SystemSounds.Exclamation.Play();
+                    break;
+                case FoodType.Fast:
+                    SystemSounds.Beep.Play();
+                    break;
+                case FoodType.Slow:
+                    SystemSounds.Question.Play();
+                    break;
+                default:
+                    SystemSounds.Asterisk.Play();
+                    break;
+            }
         }
 
         private void ShowGameOverOverlay()
