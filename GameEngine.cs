@@ -5,6 +5,10 @@ namespace SnakeGame
 {
     public sealed class GameEngine
     {
+        private const int BaseFoodPoints = 10;
+        private const int BonusFoodMultiplier = 5;
+        private const int LevelPointsStep = 50;
+
         private readonly Random _rnd = new();
         private readonly System.Timers.Timer _tickTimer;
         private readonly System.Timers.Timer _bonusTimer;
@@ -127,8 +131,8 @@ namespace SnakeGame
 
         private void OnScoreChanged()
         {
-            // level-up every 10 points
-            var newLevel = 1 + (Score / 10);
+            // level-up every fixed number of points
+            var newLevel = 1 + (Score / LevelPointsStep);
             if (newLevel != Level)
             {
                 Level = newLevel;
@@ -141,7 +145,7 @@ namespace SnakeGame
         private Food SpawnFood()
         {
             var pos = GetFreePosition();
-            return new Food(pos, 10);
+            return new Food(pos, BaseFoodPoints);
         }
 
         private void TrySpawnBonus()
@@ -149,7 +153,7 @@ namespace SnakeGame
             // spawn bonus occasionally
             if (Bonus is null && _rnd.NextDouble() < 0.45)
             {
-                Bonus = new BonusFood(GetFreePosition(), 5, TimeSpan.FromSeconds(6));
+                Bonus = new BonusFood(GetFreePosition(), BaseFoodPoints * BonusFoodMultiplier, TimeSpan.FromSeconds(6));
                 Updated?.Invoke(this, EventArgs.Empty);
 
                 // auto remove after time
