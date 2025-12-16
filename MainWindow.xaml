@@ -8,7 +8,7 @@
         MinWidth="1100"
         WindowStartupLocation="CenterScreen"
         Background="#050710"
-        KeyDown="Window_KeyDown">
+        PreviewKeyDown="Window_KeyDown">
     <Window.Resources>
         <LinearGradientBrush x:Key="AppBackground" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#050B16" Offset="0" />
@@ -189,7 +189,7 @@
                     <!-- Game Canvas -->
                     <Border Grid.Row="2" Background="#050C18" CornerRadius="20" Padding="16" MinHeight="360">
                         <Grid>
-                            <Canvas x:Name="GameCanvas" Background="#040A12" ClipToBounds="True" MinHeight="320" />
+                            <Canvas x:Name="GameCanvas" Background="#040A12" ClipToBounds="True" MinHeight="320" SnapsToDevicePixels="True" />
                             <Rectangle Stroke="#15233B"
                                        StrokeDashArray="0,18"
                                        RadiusX="18"
@@ -197,6 +197,30 @@
                                        IsHitTestVisible="False"
                                        Margin="8"
                                        Opacity="0.5" />
+                            <Grid x:Name="GameOverOverlay"
+                                  Visibility="Collapsed"
+                                  Background="#C9050C18">
+                                <StackPanel HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Width="280">
+                                    <TextBlock Text="Game Over"
+                                               Foreground="White"
+                                               FontSize="32"
+                                               FontWeight="Bold"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock x:Name="GameOverScoreText"
+                                               Text="Score: 0"
+                                               Foreground="#CFE9FF"
+                                               FontSize="18"
+                                               Margin="0,12,0,0"
+                                               HorizontalAlignment="Center" />
+                                    <Button Content="Play Again"
+                                            Width="160"
+                                            Margin="0,24,0,0"
+                                            HorizontalAlignment="Center"
+                                            Click="PlayAgainButton_Click" />
+                                </StackPanel>
+                            </Grid>
                         </Grid>
                     </Border>
 

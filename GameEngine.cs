@@ -99,6 +99,7 @@ namespace SnakeGame
             {
                 _tickTimer.Stop();
                 _bonusTimer.Stop();
+                _isRunning = false;
                 GameOver?.Invoke(this, EventArgs.Empty);
                 return;
             }
@@ -140,7 +141,7 @@ namespace SnakeGame
         private Food SpawnFood()
         {
             var pos = GetFreePosition();
-            return new Food(pos, 1);
+            return new Food(pos, 10);
         }
 
         private void TrySpawnBonus()

@@ -18,8 +18,12 @@ namespace SnakeGame
         private readonly Color _snakeHighlightColor = Color.FromRgb(0xA3, 0xFF, 0xF7);
         private readonly Brush _foodBrush = new SolidColorBrush(Color.FromRgb(0x3E, 0xE3, 0xA7));
         private readonly Brush _bonusBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xD1, 0x66));
+        private readonly Color _boardBaseColor = Color.FromRgb(0x04, 0x0A, 0x12);
+        private readonly Color _gridLineColor = Color.FromArgb(110, 0x15, 0x23, 0x3B);
         private readonly List<(int Score, DateTime CompletedAt)> _scoreHistory = new();
         private int _bestScore;
+        private Brush? _cachedGridBrush;
+        private Size _cachedCellSize = Size.Empty;
 
         public MainWindow()
         {
@@ -55,6 +59,7 @@ namespace SnakeGame
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
+            HideGameOverOverlay();
             _engine.Reset();
             UpdatePlayPauseButton();
         }
@@ -135,8 +140,8 @@ namespace SnakeGame
             Dispatcher.Invoke(() =>
             {
                 RecordScore(_engine.Score);
-                MessageBox.Show($"Game Over! Score: {_engine.Score}", "Neon Snake");
-                _engine.Reset();
+                ShowGameOverOverlay();
+                UpdatePlayPauseButton();
             });
         }
 
@@ -163,6 +168,8 @@ namespace SnakeGame
             Canvas.SetLeft(glow, 0);
             Canvas.SetTop(glow, 0);
             GameCanvas.Children.Add(glow);
+
+            UpdateGridBackground(cellW, cellH);
 
             // draw snake with neon trail
             var segments = _engine.Snake.Segments.ToList();
@@ -239,14 +246,65 @@ namespace SnakeGame
             ScoreText.Text = _engine.Score.ToString();
             LevelText.Text = _engine.Level.ToString();
             SpeedText.Text = _engine.SpeedLabel;
+            _bestScore = Math.Max(_bestScore, _engine.Score);
             UpdateBestScoreDisplay();
             UpdatePlayPauseButton();
+        }
+
+        private void UpdateGridBackground(double cellW, double cellH)
+        {
+            if (GameCanvas is null || cellW <= 0 || cellH <= 0)
+            {
+                return;
+            }
+
+            if (Math.Abs(_cachedCellSize.Width - cellW) < 0.01 && Math.Abs(_cachedCellSize.Height - cellH) < 0.01 && _cachedGridBrush is not null)
+            {
+                GameCanvas.Background = _cachedGridBrush;
+                return;
+            }
+
+            var baseBrush = new SolidColorBrush(_boardBaseColor);
+            baseBrush.Freeze();
+            var gridBrush = new SolidColorBrush(_gridLineColor);
+            gridBrush.Freeze();
+
+            var geometry = new RectangleGeometry(new Rect(0, 0, cellW, cellH));
+            var pen = new Pen(gridBrush, 0.8)
+            {
+                DashCap = PenLineCap.Flat,
+                StartLineCap = PenLineCap.Flat,
+                EndLineCap = PenLineCap.Flat
+            };
+            pen.Freeze();
+
+            var drawing = new GeometryDrawing(baseBrush, pen, geometry);
+            drawing.Freeze();
+
+            var tiledBrush = new DrawingBrush(drawing)
+            {
+                TileMode = TileMode.Tile,
+                Viewport = new Rect(0, 0, cellW, cellH),
+                ViewportUnits = BrushMappingMode.Absolute,
+                Stretch = Stretch.None
+            };
+            tiledBrush.Freeze();
+
+            GameCanvas.Background = tiledBrush;
+            _cachedGridBrush = tiledBrush;
+            _cachedCellSize = new Size(cellW, cellH);
         }
 
         private void TogglePlayPause()
         {
             if (!_engine.IsRunning)
             {
+                if (IsGameOverOverlayVisible())
+                {
+                    HideGameOverOverlay();
+                    _engine.Reset();
+                }
+
                 _engine.Start();
             }
             else
@@ -283,6 +341,37 @@ namespace SnakeGame
             }
 
             BestScoreText.Text = $"Best: {_bestScore}";
+        }
+
+        private void ShowGameOverOverlay()
+        {
+            if (GameOverOverlay is null || GameOverScoreText is null)
+            {
+                return;
+            }
+
+            GameOverScoreText.Text = $"Score: {_engine.Score}";
+            GameOverOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void HideGameOverOverlay()
+        {
+            if (GameOverOverlay is null)
+            {
+                return;
+            }
+
+            GameOverOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private bool IsGameOverOverlayVisible() => GameOverOverlay is not null && GameOverOverlay.Visibility == Visibility.Visible;
+
+        private void PlayAgainButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideGameOverOverlay();
+            _engine.Reset();
+            _engine.Start();
+            UpdatePlayPauseButton();
         }
 
         private void RecordScore(int score)
